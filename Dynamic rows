@@ -1,0 +1,466 @@
+HTML:
+<?xml version="1.0" encoding="utf-8"?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+   <g:requires name="scripts/lib/jquery_includes.js"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+	<body>
+      <table id="inp">
+         <tr><th>Division<span class="required">*</span></th>
+         <th>Brand<span class="required">*</span></th>
+         <th>Channel</th>
+			 <th></th>
+		 </tr>
+         <tr>
+            <td>
+               <g:ui_reference name="rdivision" id="rdivision" table="u_rm_function" query="u_type=Owner" completer="AJAXTableCompleter"  columns="u_type" value="" mandatory="true" />
+            </td>
+            <td>
+               <g:ui_reference name="rbrand" id="rbrand" table="u_rm_function" query="u_type=Brand" completer="AJAXTableCompleter" columns="u_type" value="" mandatory="true" />
+            </td>
+            <td>
+               <g:ui_reference name="rchannel" id="rchannel" table="u_rm_function" query="u_type=Channel" completer="AJAXTableCompleter" columns="u_type" value="" mandatory="true" />
+            </td>
+			 <td></td>
+			  
+            <g:evaluate jelly="true">
+               var gr = new GlideRecord('pm_project');
+               var elementType = gr.getElement('u_r_object_type');
+               var elementTask = gr.getElement('u_r_object_task');
+               var elementPhase = gr.getElement('u_r_object_phase');
+            </g:evaluate>
+	
+			  <tr>
+         <th>Object Type<span class="required">*</span></th>
+         <th>Object Task</th>
+         <th>Object Phase</th>
+				   <th></th>
+	   </tr>
+            <td>
+               <select name="rObjectType" id="rObjectType" class="rObjectType" onChange="rObjectChange()" mandatory="true" >
+                  <j:forEach items="${GlideScriptChoiceList.getChoiceList(gr.getTableName(), elementType.getName())}" var="jvar_choice_type">
+                     <option value="${jvar_choice_type.value}">
+                        ${jvar_choice_type.label}
+                     </option>
+                  </j:forEach>
+               </select>	
+			 </td>			 
+            <td>
+               <select name="rObjectTask" id="rObjectTask" class="rObjectTask" mandatory="true" disabled="true">
+                  <option>-- None --</option>
+                  <option>Basic Maintenance Task</option>
+                  <option>Development Task</option>
+                  <option>Operation Task</option>
+                  <option>Project Task</option>
+                  <option>Steering Task</option>
+               </select>
+            </td>		 
+            <td>
+               <select name="rObjectPhase" id="rObjectPhase" class="rObjectPhase" mandatory="true" disabled="true">
+                  <j:forEach items="${GlideScriptChoiceList.getChoiceList(gr.getTableName(), elementPhase.getName())}" var="jvar_choice_phase">
+                     <option value="${jvar_choice_phase.value}">
+                        ${jvar_choice_phase.label}
+                     </option>
+                  </j:forEach>
+               </select>
+            </td>
+			  <td></td>
+         </tr>
+      </table>
+	 <p align="right">
+         <input type="button" align="right" id="addRow" value="Add" font-size="15px" onclick="addRow()" />
+  </p>
+
+      <!--THE CONTAINER WHERE WE'll ADD THE DYNAMIC TABLE-->
+      <div id="cont">
+	  <table id="proTable">
+		  <tr>
+			  <th></th>
+			  <th>Division</th>
+			  <th>Brand</th>
+			  <th>Channel</th>
+			  <th>Object Type</th>
+			  <th>Object Task</th>
+			  <th>Object Phase</th>
+		  </tr>
+
+	  </table>
+	  </div>
+      <p align="center">
+         <input type="button" id="bt" value="Submit" onclick="submit()" />
+      </p>
+   </body>
+   <style>   
+      <!-- Mandatory icon --> 
+      .required
+      {
+      color:red;
+      }
+	   
+	  <!-- Length for Checkbox  -->  
+	  select, option { width: 175px;
+	  height: 30px;}
+	   
+      <!-- Table style for INP --> 
+      table#inp {
+      font-family: arial, sans-serif;
+	  font-size:	12px;
+      bgcolor="#000000";
+      border-collapse: collapse;
+	  table-layout: fixed;
+	  }
+	   
+      #inp td {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 5px;
+	  width="20%"
+	  }
+	   
+	  #inp th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 5px;
+	  width="15%"
+	  }
+	 	   
+      #inp tr {
+      background-color: #dddddd;
+      }
+	   
+<!-- Table style for proTable -->
+	 
+      #proTable {
+      font-family: arial, sans-serif;
+	  font-size:	10px;
+	  table-layout: fixed;
+	   width : 520px;
+      }
+
+<!-- The below code is overridden by Inhertied property
+	  #proTable td {
+      text-align: left;
+	  width="10%";
+	  }
+	   
+	  #proTable th {
+      text-align: left;
+	  width="10%";
+	  }
+	 	   	       
+      #proTable tr {
+      background-color: #dddddd;
+	  } 
+-->
+
+}
+   </style>
+	
+</j:jelly>
+
+Client Script :
+function rObjectChange() {
+    //Project Type	
+    if ($("rObjectType").value == 'Project') {
+        gel('rObjectTask').removeAttribute("disabled");
+        gel('rObjectPhase').removeAttribute("disabled");
+
+        //Clear the options and add None & Project
+
+        var proj = document.getElementById("rObjectTask");
+        var len_pr = proj.length;
+        //alert("Project :" + len_pr); 
+        for (var p = 0; p < len_pr; p++) {
+            proj.remove(0);
+        }
+
+        //Add values to Project Task
+        var proj_arr = [];
+        proj_arr = ['-- None --', 'Project Task'];
+
+        for (var a1 = 0; a1 < proj_arr.length; a1++) {
+            var opt = document.createElement('option');
+            opt.value = proj_arr[a1];
+            opt.innerHTML = proj_arr[a1];
+            proj.appendChild(opt);
+        }
+    } else {
+        gel('rObjectPhase').setAttribute("disabled", true);
+        $("rObjectPhase").value = '';
+    }
+
+    if ($("rObjectType").value == '') {
+        $("rObjectTask").value = "-- None --";
+        $("rObjectPhase").value = '';
+        gel('rObjectTask').setAttribute("disabled", true);
+        gel('rObjectPhase').setAttribute("disabled", true);
+    }
+
+    //Maintenance Type	
+    if ($("rObjectType").value == 'Maintenance') {
+        gel('rObjectTask').removeAttribute("disabled");
+        gel("rObjectPhase").value = '';
+
+        //Clear the options and add 'Basic Maintenance and Development'
+
+        var type = document.getElementById("rObjectTask");
+        var len_mn = type.length;
+        //alert("Maintenance :" + len_mn); 
+        for (m = 0; m <= len_mn; m++) {
+            type.remove(0);
+        }
+
+        //Add values to Maintenance Task
+        var main_arr = [];
+        main_arr = ['-- None --', 'Basic Maintenance Task', 'Development Task'];
+
+        for (var a2 = 0; a2 < main_arr.length; a2++) {
+            var main = document.createElement('option');
+            main.value = main_arr[a2];
+            main.innerHTML = main_arr[a2];
+            type.appendChild(main);
+        }
+    }
+
+    //Operation Type	
+    if ($("rObjectType").value == 'Operation') {
+        gel('rObjectTask').removeAttribute("disabled");
+        gel("rObjectPhase").value = '';
+
+        //Clear the options and add 'Operation and Development'
+        var oper = document.getElementById("rObjectTask");
+        var len_op = oper.length;
+        //alert("Operation :" + len_op); 
+        for (var o = 0; o <= len_op; o++) {
+            oper.remove(0);
+        }
+
+        //Add values to Operation Task
+        var oper_arr = [];
+        oper_arr = ['-- None --', 'Operation Task', 'Development Task'];
+
+        for (var a3 = 0; a3 < oper_arr.length; a3++) {
+            var opert = document.createElement('option');
+            opert.value = oper_arr[a3];
+            opert.innerHTML = oper_arr[a3];
+            oper.appendChild(opert);
+        }
+    }
+
+    //Steering Type
+    if ($("rObjectType").value == 'Steering') {
+        gel('rObjectTask').removeAttribute("disabled");
+        gel("rObjectPhase").value = '';
+
+        //Clear the options and add 'Steering and None'
+
+        var ster = document.getElementById("rObjectTask");
+        var len_st = ster.length;
+        //alert("Steering :" + len_st); 
+        for (var s = 0; s <= len_st; s++) {
+            ster.remove(0);
+        }
+
+        //Add values to Steering Task
+        var ster_arr = [];
+        ster_arr = ['-- None --', 'Steering Task'];
+
+        for (var a4 = 0; a4 < ster_arr.length; a4++) {
+            var steer = document.createElement('option');
+            steer.value = ster_arr[a4];
+            steer.innerHTML = ster_arr[a4];
+            ster.appendChild(steer);
+        }
+    }
+}
+
+
+	//Create table with Header
+var arrHead = ['', 'Division', 'Brand', 'Channel', 'Object Type', 'Object Task', 'Object Phase'];
+
+	
+function addRow() {
+    //alert("Create new Row");
+
+    var dv1 = $('rdivision').value;
+    var br1 = $('rbrand').value;
+    var ch1 = $('rchannel').value;
+    var ot = $('rObjectType').value;
+    var os = $('rObjectTask').value;
+    var op = $('rObjectPhase').value;
+
+
+    if (dv1 == "" || br1 == "" || ot == '') {
+        //If comments are empty, alert the user and stop submission
+      alert("Please provide values for Division,Brand and Object Type");
+        return false;
+    }
+
+    var dv = getDiv(dv1);
+    var br = getDiv(br1);
+    var ch = getDiv(ch1);
+
+    if (op == '') {
+        op = "-- None --";
+    }
+
+    if (ot == '') {
+        ot = "-- None --";
+    }
+
+    var arr = [];
+    arr.push(dv);
+    arr.push(br);
+    arr.push(ch);
+    arr.push(ot);
+    arr.push(os);
+    arr.push(op);
+
+    var curr_data = '';
+    curr_data = arr.join("");
+    //alert("Current Data:"+curr_data); 
+
+
+    //Check for Duplicates before inserting the text inside cells
+
+    //Complete set of values before submitting
+    //Array to push every row in a Final array variable
+    var final_array = [];
+    var add_values = '';
+
+    // LOOP THROUGH EACH ROW OF THE TABLE - Check before Inserting
+    var myTab = document.getElementById('proTable');
+    for (row = 1; row < myTab.rows.length; row++) {
+
+        for (c = 0; c < myTab.rows[row].cells.length; c++) { // EACH CELL IN A ROW.
+
+            var element = myTab.rows.item(row).cells[c];
+            if (element.childNodes[0].getAttribute('type') == 'text') {
+                add_values = add_values + (element.childNodes[0].value);
+            }
+        }
+        final_array.push(add_values);
+        add_values = '';
+    }
+
+    //Check for Duplicates
+    var a = final_array.indexOf(curr_data);
+    //alert("Position = " + a);
+
+    if (final_array.indexOf(curr_data) > -1) {
+       alert("Duplicate Found - Please modify the values");
+        return false;
+    }
+
+    //Insert the Cell values in the Table		
+
+    var empTab = document.getElementById('proTable');
+    var rowCnt = empTab.rows.length; // GET TABLE ROW COUNT.
+    var tr = empTab.insertRow(rowCnt); // TABLE ROW.
+    //tr = empTab.insertRow(rowCnt);               
+    var i = 0;
+    for (var c = 0; c < arrHead.length; c++) {
+        var td = document.createElement('td');
+        td = tr.insertCell(c);
+
+        if (c == 0) { // FIRST COLUMN.
+            // ADD A BUTTON.
+            var button = document.createElement('input');
+
+            // SET INPUT ATTRIBUTE.
+            button.setAttribute('type', 'button');
+            button.setAttribute('value', 'Remove');
+
+            // ADD THE BUTTON's 'onclick' EVENT.
+            button.setAttribute('onclick', 'removeRow(this)');
+            td.appendChild(button);
+        }
+		else {
+            // CREATE AND ADD TEXTBOX IN EACH CELL.
+            var ele = document.createElement('input');
+            ele.setAttribute('type', 'text');
+			ele.setAttribute('disabled', true);
+            ele.setAttribute('value', arr[i]);
+            i++;
+            td.appendChild(ele);
+        }
+    }
+
+    // LOOP THROUGH EACH ROW OF THE TABLE
+
+	var set_values = [];
+    for (row = 1; row < myTab.rows.length; row++) {
+
+        for (c = 0; c < myTab.rows[row].cells.length; c++) { // EACH CELL IN A ROW.
+
+            var element1 = myTab.rows.item(row).cells[c];
+            if (element1.childNodes[0].getAttribute('type') == 'text') {
+                add_values = add_values + (element1.childNodes[0].value);
+            }
+        }
+        set_values.push(add_values);
+		add_values = '';
+    }
+//alert("Final before submit :"+set_values);
+}
+
+function removeRow(oButton) {
+    var empTab = document.getElementById('proTable');
+    empTab.deleteRow(oButton.parentNode.parentNode.rowIndex); // BUTTON -> TD -> TR.
+}
+
+function getDiv(dv1) {
+    var dv = new GlideRecord('u_rm_function');
+    dv.addQuery('sys_id', dv1);
+    dv.query();
+    var result = '';
+
+    if (dv.next()) {
+        result = dv.getValue('u_value');
+    }
+    return result;
+}
+
+
+function submit() {
+    var myTab = document.getElementById('proTable');
+    var submitted_array = '';
+
+    // LOOP THROUGH EACH ROW OF THE TABLE.
+
+    for (row = 1; row < myTab.rows.length; row++) {
+        for (c = 0; c < myTab.rows[row].cells.length; c++) { // EACH CELL IN A ROW.
+
+            var element = myTab.rows.item(row).cells[c];
+            if (element.childNodes[0].getAttribute('type') == 'text') {
+                submitted_array+=((element.childNodes[0].value)+",");
+            }
+        }
+    }
+	
+var final_array='';
+	final_array = removeLastComma(submitted_array); // should remain unchanged
+	
+	alert(final_array);
+
+function removeLastComma(strng){        
+    var n=strng.lastIndexOf(",");
+    var a=strng.substring(0,n);
+    return a;}
+	
+	var sysID ="8fc1863adb0203005d67f00fbf961920";
+	
+	//Call the Script Include for bulk creation of Records:
+	var ga = new GlideAjax('global.createSubProject2');
+	ga.addParam("sysparm_project_sysid", sysID);
+	ga.addParam("sysparm_name",'createBulkRecords');
+	ga.addParam("sysparm_finalSub", final_array);
+	ga.getXML(parseCreateSubProject);
+	
+}
+
+	function parseCreateSubProject(response)
+{
+	//alert("Called Glide Ajax inside UI page");
+	var answer = response.responseXML.documentElement.getAttribute("answer");
+	alert("Final:"+answer);	
+}		
